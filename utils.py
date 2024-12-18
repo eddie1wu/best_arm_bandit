@@ -24,7 +24,7 @@ def gen_friedman_data(x_dim, n_sample, sigma, random_state = 4):
 
     return X, y
 
-def plot_posterior_mean(out, time, q):
+def plot_posterior_mean(out, time, q, title, save_name):
     time_range = np.arange(time)
     out_array = np.array(out)
 
@@ -36,12 +36,13 @@ def plot_posterior_mean(out, time, q):
         else:
             plt.plot(time_range, out_array[:, i], color = 'blue', alpha = 0.4)
     plt.grid(True)
-    plt.title("Posterior probabilities over Time")
+    plt.title(title)
     plt.xlabel("Time step")
     plt.ylabel("pi_k")
     plt.yticks(np.arange(0, 1.1, 0.05))
-    # plt.savefig('figure.png')
-    plt.show()
+
+    plt.savefig(save_name, dpi=400)
+    plt.close()
 
 def plot_statistic(result_dict, title, save_name):
     # Extract methods and values for plotting

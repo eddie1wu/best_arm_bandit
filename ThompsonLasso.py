@@ -117,12 +117,4 @@ class ThompsonLasso:
             out.append(pi)
             lamb_list.append(opt_lamb)
 
-            # if len(out) > 5:
-
-            #     max_len = max(len(x) for x in out)
-            #     temp = np.zeros((5, max_len))
-
-            #     for i, x in enumerate(out[-5:]):
-            #         temp[i, :len(x)] = x
-
         return out, time, lamb_list

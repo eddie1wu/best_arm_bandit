@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 
-from MLP import *
+from MLP import MLP
 from utils import *
 
 # Generate data
@@ -30,7 +30,9 @@ X_train, X_test, Y_train, Y_test = train_test_split(X, y, test_size = 0.2, rando
 X_train_sm = sm.add_constant(X_train)
 X_test_sm = sm.add_constant(X_test)
 model = sm.OLS(Y_train, X_train_sm).fit()
-print(model.summary())
+Y_pred = model.predict(X_test_sm)
+mse = mean_squared_error(Y_test, Y_pred)
+print(f"The OLS MSE is {mse: .5f}")
 
 # LASSO
 lasso = LassoCV(cv = 5, random_state = 0)
@@ -38,10 +40,8 @@ lasso.fit(X_train, Y_train)
 
 Y_pred = lasso.predict(X_test)
 mse = mean_squared_error(Y_test, Y_pred)
+print(f"The LASSO MSE is {mse: .5f}")
 
-print(lasso.alpha_)
-print(lasso.coef_)
-print(mse)
 
 # Feedforward neural net
 dataset = MyDataset( pd.DataFrame(np.column_stack( (X_train, Y_train) )) )
@@ -71,10 +71,10 @@ for epoch in range(15):
 
         epoch_loss += loss.item()
 
-    print(f'Epoch:{epoch}, Loss = {epoch_loss / len(loader_train):.5f}')
+    # print(f'Epoch:{epoch}, Loss = {epoch_loss / len(loader_train):.5f}')
 
 net.eval()
 with torch.no_grad():
     Y_pred = net(torch.tensor(X_test, dtype=torch.float32))
 mse = mean_squared_error(Y_test, Y_pred)
-print(mse)
+print(f"The FFNN MSE is {mse: .5f}")
