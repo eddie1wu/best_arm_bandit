@@ -1,28 +1,59 @@
 import numpy as np
+
+from sklearn.datasets import make_regression
+
 import matplotlib.pyplot as plt
 
 import torch
 from torch.utils.data import Dataset
 
-def gen_linear_data(x_dim, n_sample, q, sigma, random_state = 4):
-    np.random.seed(random_state)
+def make_linreg(
+        n_samples,
+        n_features,
+        n_informative,
+        intercept=0,
+        std_error = 1,
+        specify_coef = None,
+        return_coef = False,
+        random_state = None
+):
 
-    X = np.random.uniform(size = (n_sample, x_dim))
-    fX = 1
-    for i in range(q):
-        fX += (-1) ** i * 0.5 * X[:, i]
-    y = fX + np.random.normal(scale = sigma, size = fX.shape)
+    X, y, true_coef = make_regression(
+        n_samples = n_samples,
+        n_features = n_features,
+        n_informative = n_informative,
+        bias = intercept,
+        noise = std_error,  # std error
+        shuffle = False,  # So that the first k columns are informative
+        coef = True,
+        random_state = random_state
+    )
 
-    return X, y
+    if specify_coef is not None:
+        y = X @ specify_coef + intercept + np.random.normal(0, std_error, n_samples)
+        true_coef = specify_coef
 
-def gen_friedman_data(x_dim, n_sample, sigma, random_state = 4):
-    np.random.seed(random_state)
+    return (X, y, true_coef) if return_coef else (X, y)
 
-    X = np.random.uniform(size=(n_sample, x_dim))
-    fX = 10 * np.sin(np.pi * X[:, 0] * X[:, 1]) + 20 * (X[:, 2] - 0.5) ** 2 + 10 * X[:, 3] + 5 * X[:, 4]
-    y = fX + np.random.normal(scale = sigma, size = fX.shape)
 
-    return X, y
+def make_friedman(
+        n_samples,
+        n_features,
+        std_error,
+        random_state = None
+):
+
+    if random_state is not None:
+        np.random.seed(random_state)
+
+    X = np.random.uniform(size = (n_samples, n_features))
+
+    fX = 10 * np.sin(np.pi * X[:, 0] * X[:, 1]) + 20 * (X[:, 2] - 0.5)**2 + 10 * X[:, 3] + 5 * X[:, 4]
+
+    y = fX + np.random.normal(0, std_error, n_samples)
+
+    return (X, y)
+
 
 def plot_posterior_mean(out, time, q, title, save_name):
     time_range = np.arange(time)
@@ -42,6 +73,7 @@ def plot_posterior_mean(out, time, q, title, save_name):
     plt.yticks(np.arange(0, 1.1, 0.05))
 
     plt.savefig(save_name, dpi=400)
+    plt.show()
     plt.close()
 
 def plot_statistic(result_dict, title, save_name):
