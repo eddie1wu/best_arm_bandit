@@ -23,7 +23,7 @@ q = 5
 sigma = 1
 seed = 31
 
-X, y = gen_linear_data(p, n, q, sigma, seed)
+X, y = make_linreg(p, n, q, std_error = sigma, random_state = seed)
 X_train, X_test, Y_train, Y_test = train_test_split(X, y, test_size = 0.2, random_state = seed)
 
 # Lin reg

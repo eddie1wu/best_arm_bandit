@@ -13,13 +13,12 @@ file = "gkx_clean.csv"
 
 df = pd.read_csv(data_path + file)
 
-print(df.head(5))
-start = "1970-01"
-end = "1991-01"
-df = df.query("date > @start and date < @end")
+start = "2000-01"
+end = "2019-12"
+df = df.query("date >= @start and date <= @end")
 gc.collect()
 
 print(df.shape)
 print(df.isna().sum())
 
-df.to_csv(data_path + f"{start}_{end}.csv", index=False)
+df.to_csv(data_path + "gkx_subset.csv", index=False)

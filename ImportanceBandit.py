@@ -18,11 +18,18 @@ class ImportanceBandit:
         time_series: a bool for whether to maintain temporal ordering.
     """
 
-    def __init__(self, model, alpha_prior, beta_prior, bootstrap = True, time_series = False):
+    def __init__(self,
+                 model,
+                 alpha_prior,
+                 beta_prior,
+                 max_features=1,
+                 bootstrap = True,
+                 time_series = False):
 
         self.model = model
         self.alpha = alpha_prior
         self.beta = beta_prior
+        self.max_num_features = int(max_features * len(self.alpha))
         self.bootstrap = bootstrap
         self.time_series = time_series
 
@@ -34,6 +41,9 @@ class ImportanceBandit:
         return idx
 
     def choose(self):
+        """
+        Thompson sampling for combinatorial bandit, with MPM oracle.
+        """
 
         theta = np.random.beta(self.alpha, self.beta)
         idx = np.argwhere(theta >= 0.5).reshape(-1)
@@ -107,24 +117,29 @@ class ImportanceBandit:
         return self.alpha / (self.alpha + self.beta)
 
     def eval_convergence(self, features_informative = None, probabilities = None):
-
+        """
+        If true features are known, convergence is evaluated based on true features.
+        Otherwise, convergence is evaluated based on the stability of posterior inclusion probabilities.
+        """
         if features_informative is not None:
-
+            # Given true informative features, convergence is when
+            # the true features have the highest posterior probabilities
+            # few other features have posterior probabilities greater than 0.5.
             k = len(features_informative)
             curr_mu = self.alpha / (self.alpha + self.beta)
             curr_best = np.argsort(curr_mu)[-k:]
 
-            noise_arr = np.delete(curr_mu, features_informative)
+            noise_arr = np.delete(curr_mu, features_informative) # Delete the probabilities on the features_informative indices
 
-            condition1 = np.array_equal( np.sort(features_informative), np.sort(curr_best) )
-            condition2 = np.sum(noise_arr > 0.5) < k/2
+            condition1 = np.array_equal( np.sort(features_informative), np.sort(curr_best) ) & np.all(curr_mu[:k] > 0.5) # All top features more than 50% prob.
+            condition2 = np.sum(noise_arr >= 0.5) == 0  # previously was k/2
 
             return condition1 and condition2
 
         elif probabilities is not None:
 
-            if len(probabilities) > 10:
-                arr = np.array(probabilities[-10:])
+            if len(probabilities) > 50:
+                arr = np.array(probabilities[-50:])
                 k = np.sum(arr[-1] > 0.5)
                 top_arms = [np.argsort(row)[-k:] for row in arr]
 
@@ -141,7 +156,6 @@ class ImportanceBandit:
             method='ts',
             how_reward = 'relative',
             threshold = 0.1,
-            max_features = 1,
             features_informative = None,
             max_iter = 5000,
             verbose = 0,
@@ -151,7 +165,6 @@ class ImportanceBandit:
         self.y = y
         self.how_reward = how_reward
         self.threshold = threshold
-        self.max_num_features = int(max_features * len(self.alpha))
 
         if method == 'ts':
             choose = self.choose
@@ -178,26 +191,24 @@ class ImportanceBandit:
                 probabilities.append(curr_probabilities)
 
                 if verbose > 0 and time_step % verbose == 0:
-                    print(idx)
+                    print(f"The arms chosen are {idx}")
 
                 pbar.update(1)
 
-                if num_epochs is not None and time_step >= num_epochs:
+                if num_epochs is not None and time_step == num_epochs:
                     break
 
-                if time_step >= max_iter:
+                if time_step == max_iter:
                     print(f"Max iter {max_iter} reached. No convergence.")
                     break
 
                 if num_epochs is None:
                     if features_informative is not None:
-                        converged = self.eval_convergence(features_informative=features_informative)
+                        converged = self.eval_convergence(features_informative = features_informative)
                     else:
-                        converged = self.eval_convergence(probabilities=probabilities)
-                        if converged:
-                            time_step -= 9
-                            probabilities = probabilities[:-9]
-
-
+                        converged = self.eval_convergence(probabilities = probabilities)
+                        # if converged:
+                        #     time_step -= 49
+                        #     probabilities = probabilities[:-49]
 
         return probabilities, time_step, r2_list

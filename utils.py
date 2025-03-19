@@ -40,6 +40,7 @@ def make_friedman(
         n_samples,
         n_features,
         std_error,
+        dgp = 1, # either 1 or 2
         random_state = None
 ):
 
@@ -48,7 +49,32 @@ def make_friedman(
 
     X = np.random.uniform(size = (n_samples, n_features))
 
-    fX = 10 * np.sin(np.pi * X[:, 0] * X[:, 1]) + 20 * (X[:, 2] - 0.5)**2 + 10 * X[:, 3] + 5 * X[:, 4]
+    if dgp == 1:
+        fX = 10 * np.sin(np.pi * X[:, 0] * X[:, 1]) + 20 * (X[:, 2] - 0.5)**2 + 10 * X[:, 3] + 5 * X[:, 4]
+    elif dgp == 2:
+        fX = 0.1 * np.exp(4 * X[:,0]) + 4/(1 + np.exp(-20 * (X[:,1] - 0.5))) + 4*X[:,2] + 3*X[:,3] + 2*X[:,4]
+
+    y = fX + np.random.normal(0, std_error, n_samples)
+
+    return (X, y)
+
+
+def make_lianglizhou(
+        n_samples,
+        n_features,
+        std_error = 0.5,
+        random_state = None
+):
+
+    if random_state is not None:
+        np.random.seed(random_state)
+
+    Z = np.random.randn(n_samples, n_features)
+    E = np.random.randn(n_samples, 1)
+
+    X = (E+Z)/2
+
+    fX = 10*X[:,1] / (1 + X[:, 0]**2) + 5*np.sin(X[:,2] * X[:,3]) + 2*X[:,4]
 
     y = fX + np.random.normal(0, std_error, n_samples)
 
@@ -75,6 +101,7 @@ def plot_posterior_mean(out, time, q, title, save_name):
     plt.savefig(save_name, dpi=400)
     plt.show()
     plt.close()
+
 
 def plot_statistic(result_dict, title, save_name):
     # Extract methods and values for plotting
